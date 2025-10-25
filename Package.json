@@ -1,0 +1,16 @@
+{
+  "name": "dao-pizza",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run --network localhost scripts/deploy.js",
+    "start-frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "hardhat": "^2.16.0",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@openzeppelin/contracts": "^4.9.0"
+  }
+}
