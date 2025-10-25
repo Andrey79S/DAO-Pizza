@@ -6,7 +6,7 @@
 - Deploy initial token
 
 ### Phase 2 — Growth
-- Open first physical pizza locations
+- Open first physical locations
 - Integrate real-time profit tracking into smart contract
 
 ### Phase 3 — Ecosystem
