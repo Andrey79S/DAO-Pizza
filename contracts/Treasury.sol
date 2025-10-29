@@ -1,43 +1,76 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 /**
- * @title Treasury
- * Holds stablecoins (USDT/USDC) and pays out rewards on request by authorized contract.
+ * DAO PIZZA — Treasury Contract (MVP version)
+ * Хранение и управление средствами от продажи DAO токенов.
+ * Управление — у владельца (создателя проекта), до запуска DAO Governance.
  */
-contract Treasury is Ownable {
-    IERC20 public stable; // USDC or USDT
-    address public distributor; // authorized to trigger payouts
 
-    event Deposited(address indexed from, uint256 amount);
-    event Paid(address indexed to, uint256 amount);
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-    constructor(IERC20 _stable) {
-        stable = _stable;
+contract DaoTreasury is Ownable, ReentrancyGuard {
+    // Принятые токены (например USDT, USDC)
+    mapping(address => bool) public acceptedTokens;
+
+    // DAO governance (будет добавлено позже)
+    address public daoGovernance;
+
+    // Флаг аварийного режима
+    bool public emergencyMode = false;
+
+    // События
+    event FundsDeposited(address indexed token, address indexed from, uint256 amount);
+    event FundsReleased(address indexed token, address indexed to, uint256 amount);
+    event EmergencyActivated(bool active);
+    event AcceptedTokenUpdated(address token, bool accepted);
+    event DaoGovernanceTransferred(address indexed dao);
+
+    constructor() {
+        // На старте управление у владельца (создателя)
     }
 
-    function setDistributor(address _distributor) external onlyOwner {
-        distributor = _distributor;
+    // Установить DAO Governance контракт (после запуска DAO)
+    function setDaoGovernance(address _daoGovernance) external onlyOwner {
+        daoGovernance = _daoGovernance;
+        emit DaoGovernanceTransferred(_daoGovernance);
     }
 
-    function deposit(uint256 amount) external {
-        require(stable.transferFrom(msg.sender, address(this), amount), "deposit failed");
-        emit Deposited(msg.sender, amount);
+    // Добавить или удалить токен из whitelist
+    function setAcceptedToken(address token, bool accepted) external onlyOwner {
+        acceptedTokens[token] = accepted;
+        emit AcceptedTokenUpdated(token, accepted);
     }
 
-    /// only distributor can call to pay users when pizza tokens are burned
-    function pay(address to, uint256 amount) external {
-        require(msg.sender == distributor, "Only distributor");
-        require(stable.balanceOf(address(this)) >= amount, "Insufficient funds");
-        require(stable.transfer(to, amount), "transfer failed");
-        emit Paid(to, amount);
+    // Внести USDT/USDC в трезори
+    function deposit(address token, uint256 amount) external nonReentrant {
+        require(acceptedTokens[token], "Token not accepted");
+        require(amount > 0, "Amount must be > 0");
+
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        emit FundsDeposited(token, msg.sender, amount);
     }
 
-    // admin withdraw in case of emergencies
-    function adminWithdraw(address to, uint256 amount) external onlyOwner {
-        require(stable.transfer(to, amount), "withdraw failed");
+    // ✅ На MVP этапе средства может выводить только владелец (создатель проекта)
+    function releaseFunds(address token, address to, uint256 amount) external onlyOwner nonReentrant {
+        require(!emergencyMode, "Emergency mode active");
+        require(acceptedTokens[token], "Token not accepted");
+        require(IERC20(token).balanceOf(address(this)) >= amount, "Insufficient balance");
+
+        IERC20(token).transfer(to, amount);
+        emit FundsReleased(token, to, amount);
+    }
+
+    // Активация аварийного режима (на будущее — для DAO)
+    function activateEmergency(bool _active) external onlyOwner {
+        emergencyMode = _active;
+        emit EmergencyActivated(_active);
+    }
+
+    // Проверка баланса
+    function getBalance(address token) external view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
     }
 }
