@@ -1,16 +1,16 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 module.exports = {
-  solidity: "0.8.19",
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts"
-  },
+  solidity: "0.8.20",
   networks: {
-    hardhat: {
-      chainId: 1337
-    }
-  }
+    polygon_amoy: {
+      url: "https://rpc-amoy.polygon.technology",
+      accounts: [process.env.PRIVATE_KEY], // Твой приватный ключ Metamask
+      chainId: 80002,
+    },
+  },
+  etherscan: {
+    apiKey: process.env.POLYGONSCAN_API_KEY, // для верификации контракта
+  },
 };
