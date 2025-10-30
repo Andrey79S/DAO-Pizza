@@ -1,16 +1,14 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config();
+require('@nomicfoundation/hardhat-toolbox');
+require('@openzeppelin/hardhat-upgrades');
+require('dotenv').config();
 
 module.exports = {
   solidity: "0.8.20",
   networks: {
-    polygon_amoy: {
-      url: "https://rpc-amoy.polygon.technology",
-      accounts: [process.env.PRIVATE_KEY], // Твой приватный ключ Metamask
-      chainId: 80002,
-    },
-  },
-  etherscan: {
-    apiKey: process.env.POLYGONSCAN_API_KEY, // для верификации контракта
-  },
+    hardhat: {},
+    sepolia: {
+      url: process.env.ALCHEMY_SEPOLIA || "",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    }
+  }
 };
